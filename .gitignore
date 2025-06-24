@@ -1,0 +1,9 @@
+wandb
+outputs
+.hydra
+__pycache__
+lightning_logs
+data
+env
+preprocessing/digital*
+tlob-env

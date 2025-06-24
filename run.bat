@@ -1,0 +1,1 @@
+python main.py model=tlob dataset=my_nq experiment.max_epochs=1 experiment.horizon=30 experiment.is_wandb=false

@@ -1,0 +1,2 @@
+*.ckpt filter=lfs diff=lfs merge=lfs -text
+data/checkpoints/TLOB/HuggingFace/*.ckpt filter=lfs diff=lfs merge=lfs -text
