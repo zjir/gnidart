@@ -224,6 +224,9 @@ class Engine(LightningModule):
                              )
         path_ckpt = os.path.join(cst.DIR_SAVED_MODEL, str(self.model_type), self.dir_ckpt, "pt", filename_ckpt)
         
+        os.makedirs(os.path.join(cst.DIR_SAVED_MODEL, str(self.model_type), self.dir_ckpt), exist_ok=True) 
+            
+        
         # Save PyTorch checkpoint
         with self.ema.average_parameters():
             self.trainer.save_checkpoint(path_ckpt)
