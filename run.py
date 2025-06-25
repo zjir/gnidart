@@ -87,9 +87,9 @@ def train(config: Config, trainer: L.Trainer, run=None):
             step        = config.dataset.step,
             horizon     = config.dataset.horizon
         )
-        train_set.length = 1000000        # ≈ 1000 snapshots
-        val_set.length   = 1000000
-        test_set.length  = 1000000
+        #train_set.length = 1000000        # ≈ 1000 snapshots
+        #val_set.length   = 1000000
+        #test_set.length  = 1000000
         
        
          # ───── NEW: make dummy tensors for stats section ─────
