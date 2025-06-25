@@ -63,10 +63,10 @@ LEN_ORDER = 6
 LEN_SMOOTH = 10
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-DIR_EXPERIMENTS = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\experiments"
-DIR_SAVED_MODEL = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\checkpoints"
+DIR_EXPERIMENTS = "data/experiments"
+DIR_SAVED_MODEL = "data/checkpoints"
 DATA_DIR = "data"
-RECON_DIR = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\reconstructions"
+RECON_DIR = "data/reconstructions"
 PROJECT_NAME = "EvolutionData"
 SPLIT_RATES = [0.8, 0.1, 0.1]
 WANDB_API = ""

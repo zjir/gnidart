@@ -18,6 +18,7 @@ import constants as cst
 from constants import DatasetType, SamplingType
 torch.serialization.add_safe_globals([omegaconf.listconfig.ListConfig])
 from preprocessing.dataset import load_pre_split_dataset
+from collections import Counter
 
 def run(config: Config, accelerator):
     
@@ -86,10 +87,11 @@ def train(config: Config, trainer: L.Trainer, run=None):
             step        = config.dataset.step,
             horizon     = config.dataset.horizon
         )
-        train_set.length = 1000        # ≈ 1000 snapshots
-        val_set.length   = 1000
-        test_set.length  = 1000
+        train_set.length = 1000000        # ≈ 1000 snapshots
+        val_set.length   = 1000000
+        test_set.length  = 1000000
         
+       
          # ───── NEW: make dummy tensors for stats section ─────
         train_input, train_labels = train_set[0][0], torch.tensor([train_set[0][1]])
         val_input,   val_labels   = val_set[0][0],   torch.tensor([val_set[0][1]])

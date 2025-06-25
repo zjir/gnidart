@@ -86,9 +86,9 @@ class BTC(Dataset):
 class MyNQ(Dataset):
     type: DatasetType = DatasetType.MY_NQ
     # paths to the pre-split files you generated
-    path_tokens: str = "data/processed/my_nq/bucketed_lob.npy"
-    path_labels: str = "data/processed/my_nq/labels_30s.npy"
-    path_edges : str = "data/processed/my_nq/size_edges.npy"
+    path_tokens: str = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\processed\\my_nq\\bucketed_lob.npy"
+    path_labels: str = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\processed\\my_nq\\labels_30s.npy"
+    path_edges : str = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\processed\\my_nq\\size_edges.npy"
     # training-time params
     seq_len : int = 128
     step    : int = 1
