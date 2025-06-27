@@ -1,0 +1,4 @@
+- 27.6.2025
+dobehla prvni epocha uz bez 0, takze si to vsima jednicek, ale je tam 60x odmena na uhadnuti
+jednicky, coz je asi moc. Takze postup je ten, ze bude zmenit tu odmenu na nizsi 30x nebo zkusit pustit 
+dalsi epochy ze stejnym nastavenim a podivat se jeslti se to nevylepsuje

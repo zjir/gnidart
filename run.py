@@ -19,6 +19,7 @@ from constants import DatasetType, SamplingType
 torch.serialization.add_safe_globals([omegaconf.listconfig.ListConfig])
 from preprocessing.dataset import load_pre_split_dataset
 from collections import Counter
+import numpy as np
 
 def run(config: Config, accelerator):
     
@@ -97,9 +98,8 @@ def train(config: Config, trainer: L.Trainer, run=None):
         val_input,   val_labels   = val_set[0][0],   torch.tensor([val_set[0][1]])
         test_input,  test_labels  = test_set[0][0],  torch.tensor([test_set[0][1]])
         # the tensors above are small placeholders; only shapes/unique() are used
-       
- 	counts = np.bincount(train_set.y, minlength=2)   # [neg, pos]
-    	class_weights = torch.tensor([1.0, counts[0]/counts[1]], dtype=torch.float32)
+        counts=np.bincount(train_set.y, minlength=2)   # [neg, pos]
+        class_weights=torch.tensor([1.0, counts[0]/counts[1]], dtype=torch.float32)
  
  
         data_module = DataModule(
@@ -265,7 +265,7 @@ def train(config: Config, trainer: L.Trainer, run=None):
                 is_sin_emb=checkpoint["hyper_parameters"]["is_sin_emb"],
                 map_location=cst.DEVICE,
                 len_test_dataloader=len(test_loaders[0]),
-		class_weights
+                class_weights=class_weights
                 )
         elif model_type == "BINCTABL":
             model = Engine.load_from_checkpoint(
@@ -337,7 +337,8 @@ def train(config: Config, trainer: L.Trainer, run=None):
                 dataset_type=dataset_type,
                 num_heads=config.model.hyperparameters_fixed["num_heads"],
                 is_sin_emb=config.model.hyperparameters_fixed["is_sin_emb"],
-                len_test_dataloader=len(test_loaders[0])
+                len_test_dataloader=len(test_loaders[0]),
+                class_weights=class_weights
             )
         elif model_type == cst.ModelType.BINCTABL:
             model = Engine(

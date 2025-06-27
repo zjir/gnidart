@@ -94,7 +94,8 @@ class TLOB(nn.Module):
             self.final_layers.append(nn.Linear(total_dim, total_dim//4))
             self.final_layers.append(nn.GELU())
             total_dim = total_dim//4
-        self.final_layers.append(nn.Linear(total_dim, 3))
+        self.final_layers.append(nn.Linear(total_dim, 2))   # binary output
+
         
     
     def forward(self, input, store_att=False):

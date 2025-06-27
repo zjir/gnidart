@@ -34,7 +34,7 @@ class Engine(LightningModule):
         num_heads=8,
         is_sin_emb=True,
         len_test_dataloader=None,
-	class_weights=None
+        class_weights=None
     ):
         super().__init__()
         self.seq_size = seq_size
@@ -56,10 +56,10 @@ class Engine(LightningModule):
         self.ema = ExponentialMovingAverage(self.parameters(), decay=0.999)
         self.ema.to(cst.DEVICE)
         #self.loss_function = nn.CrossEntropyLoss()
-
-	# give rarer class-1 ˜ 60× more weight than class-0
-	self.loss_function = nn.CrossEntropyLoss(weight=self.class_weights.to(cst.DEVICE))
-
+        # give rarer class-1 ˜ 60× more weight than class-0
+        self.class_weights = class_weights if class_weights is not None \
+                             else torch.tensor([1.0, 1.0])
+        self.loss_function = nn.CrossEntropyLoss(weight=self.class_weights.to(cst.DEVICE))
         self.train_losses = []
         self.val_losses = []
         self.test_losses = []
@@ -70,12 +70,19 @@ class Engine(LightningModule):
         self.val_loss = np.inf
         self.val_predictions = []
         self.min_loss = np.inf
-        self.save_hyperparameters()
+
+
+        self.save_hyperparameters(
+            "seq_size", "horizon", "max_epochs", "model_type",
+            "lr", "optimizer", "hidden_dim", "num_layers"
+        )
+        
         self.last_path_ckpt = None
         self.first_test = True
         self.test_mid_prices = []
-	self.class_weights = class_weights or torch.tensor([1.0, 1.0])
         
+        print("loss weights inside Engine:", self.loss_function.weight)        
+
     def forward(self, x, batch_idx=None):
         output = self.model(x)
         return output
