@@ -63,10 +63,10 @@ LEN_ORDER = 6
 LEN_SMOOTH = 10
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-DIR_EXPERIMENTS = "data/experiments"
-DIR_SAVED_MODEL = "data/checkpoints"
-DATA_DIR = "data"
-RECON_DIR = "data/reconstructions"
+DIR_EXPERIMENTS = "/workspace/gnidart/data/experiments"
+DIR_SAVED_MODEL = "/workspace/gnidart/data/checkpoints"
+DATA_DIR = "/workspace/gnidart/data"
+RECON_DIR = "/workspace/gnidart/data/reconstructions"
 PROJECT_NAME = "EvolutionData"
 SPLIT_RATES = [0.8, 0.1, 0.1]
 WANDB_API = ""

@@ -87,9 +87,9 @@ def train(config: Config, trainer: L.Trainer, run=None):
             step        = config.dataset.step,
             horizon     = config.dataset.horizon
         )
-        #train_set.length = 1000000        # ≈ 1000 snapshots
-        #val_set.length   = 1000000
-        #test_set.length  = 1000000
+        #train_set.length = 1000        # ≈ 1000 snapshots
+        #val_set.length   = 1000
+        #test_set.length  = 1000
         
        
          # ───── NEW: make dummy tensors for stats section ─────
@@ -97,7 +97,11 @@ def train(config: Config, trainer: L.Trainer, run=None):
         val_input,   val_labels   = val_set[0][0],   torch.tensor([val_set[0][1]])
         test_input,  test_labels  = test_set[0][0],  torch.tensor([test_set[0][1]])
         # the tensors above are small placeholders; only shapes/unique() are used
-        
+       
+ 	counts = np.bincount(train_set.y, minlength=2)   # [neg, pos]
+    	class_weights = torch.tensor([1.0, counts[0]/counts[1]], dtype=torch.float32)
+ 
+ 
         data_module = DataModule(
             train_set=train_set,
             val_set  =val_set,
@@ -260,7 +264,8 @@ def train(config: Config, trainer: L.Trainer, run=None):
                 num_heads=checkpoint["hyper_parameters"]["num_heads"],
                 is_sin_emb=checkpoint["hyper_parameters"]["is_sin_emb"],
                 map_location=cst.DEVICE,
-                len_test_dataloader=len(test_loaders[0])
+                len_test_dataloader=len(test_loaders[0]),
+		class_weights
                 )
         elif model_type == "BINCTABL":
             model = Engine.load_from_checkpoint(
