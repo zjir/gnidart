@@ -38,7 +38,7 @@ def run(config: Config, accelerator):
         precision=cst.PRECISION,
         max_epochs=config.experiment.max_epochs,
         callbacks=[
-            EarlyStopping(monitor="val_loss", mode="min", patience=1, verbose=True, min_delta=0.002),
+            EarlyStopping(monitor="val_loss", mode="min", patience=5, verbose=True, min_delta=0.0),
             TQDMProgressBar(refresh_rate=100)
             ],
         num_sanity_val_steps=0,
@@ -99,7 +99,7 @@ def train(config: Config, trainer: L.Trainer, run=None):
         test_input,  test_labels  = test_set[0][0],  torch.tensor([test_set[0][1]])
         # the tensors above are small placeholders; only shapes/unique() are used
         counts=np.bincount(train_set.y, minlength=2)   # [neg, pos]
-        class_weights=torch.tensor([1.0, counts[0]/counts[1]], dtype=torch.float32)
+        class_weights=torch.tensor([1.0, 20.0], dtype=torch.float32)
  
  
         data_module = DataModule(
