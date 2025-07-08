@@ -55,17 +55,23 @@ INTC_EVENT_STD_DEPTH = 2.333747222206966
 
 
 
-LOBSTER_HORIZONS = [10, 20, 50, 100]
+LOBSTER_HORIZONS = [2, 3, 4, 5]
 PRECISION = 32
 N_LOB_LEVELS = 10
 LEN_LEVEL = 4
 LEN_ORDER = 6
-LEN_SMOOTH = 10
+LEN_SMOOTH = 1
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-DIR_EXPERIMENTS = "/workspace/gnidart/data/experiments"
-DIR_SAVED_MODEL = "/workspace/gnidart/data/checkpoints"
-DATA_DIR = "/workspace/gnidart/data"
+
+DATA_DIR = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data"
+DIR_EXPERIMENTS = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\experiments"
+DIR_SAVED_MODEL = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\checkpoints"
+
+#DIR_EXPERIMENTS = "/workspace/gnidart/data/experiments"
+#DIR_SAVED_MODEL = "/workspace/gnidart/data/checkpoints"
+#DATA_DIR = "/workspace/gnidart/data"
+
 RECON_DIR = "/workspace/gnidart/data/reconstructions"
 PROJECT_NAME = "EvolutionData"
 SPLIT_RATES = [0.8, 0.1, 0.1]

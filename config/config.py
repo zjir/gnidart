@@ -85,10 +85,6 @@ class BTC(Dataset):
 @dataclass
 class MyNQ(Dataset):
     type: DatasetType = DatasetType.MY_NQ
-    # paths to the pre-split files you generated
-    path_tokens: str = "/workspace/gnidart/data/processed/my_nq/bucketed_lob.npy"
-    path_labels: str = "/workspace/gnidart/data/processed/my_nq/labels_30s.npy"
-    path_edges : str = "/workspace/gnidart/data/processed/my_nq/size_edges.npy"
     # training-time params
     seq_len : int = 128
     step    : int = 1

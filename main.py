@@ -14,6 +14,7 @@ from config.config import Config
 from run import run_wandb, run, sweep_init
 from preprocessing.lobster import LOBSTERDataBuilder
 from preprocessing.btc import BTCDataBuilder
+from preprocessing.nq import NQDataBuilder
 from constants import DatasetType
 
 @hydra.main(config_path="config", config_name="config")
@@ -27,7 +28,7 @@ def hydra_app(config: Config):
     if config.dataset.type == DatasetType.FI_2010:
         if config.model.type.value == "MLPLOB" or config.model.type.value == "TLOB":
             config.model.hyperparameters_fixed["hidden_dim"] = 144
-    elif config.dataset.type == DatasetType.BTC:
+    elif config.dataset.type == DatasetType.BTC or config.dataset.type == DatasetType.MY_NQ:
         if config.model.type.value == "MLPLOB" or config.model.type.value == "TLOB":
             config.model.hyperparameters_fixed["hidden_dim"] = 40
     elif config.dataset.type == DatasetType.LOBSTER:

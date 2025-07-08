@@ -18,6 +18,7 @@ import constants as cst
 from constants import DatasetType, SamplingType
 torch.serialization.add_safe_globals([omegaconf.listconfig.ListConfig])
 from preprocessing.dataset import load_pre_split_dataset
+from preprocessing.nq import nq_load        
 from collections import Counter
 import numpy as np
 
@@ -80,35 +81,37 @@ def train(config: Config, trainer: L.Trainer, run=None):
         test_loaders = [data_module.test_dataloader()]
 
     elif dataset_type == "MY_NQ":
-        from preprocessing.dataset import load_pre_split_dataset       # ensure import
-        train_set, val_set, test_set = load_pre_split_dataset(
-            tokens_path = config.dataset.path_tokens,
-            label_path  = config.dataset.path_labels,
-            seq_len     = config.dataset.seq_len,
-            step        = config.dataset.step,
-            horizon     = config.dataset.horizon
+        # ------------------------------------------------------------------
+        # mirror the BTC branch one-for-one
+        # ------------------------------------------------------------------
+        train_input, train_labels, train_ts = nq_load(
+            cst.DATA_DIR + "/NQ/train.npy", cst.LEN_SMOOTH, horizon, seq_size
         )
-        #train_set.length = 1000        # ≈ 1000 snapshots
-        #val_set.length   = 1000
-        #test_set.length  = 1000
-        
-       
-         # ───── NEW: make dummy tensors for stats section ─────
-        train_input, train_labels = train_set[0][0], torch.tensor([train_set[0][1]])
-        val_input,   val_labels   = val_set[0][0],   torch.tensor([val_set[0][1]])
-        test_input,  test_labels  = test_set[0][0],  torch.tensor([test_set[0][1]])
-        # the tensors above are small placeholders; only shapes/unique() are used
-        counts=np.bincount(train_set.y, minlength=2)   # [neg, pos]
-        class_weights=torch.tensor([1.0, 20.0], dtype=torch.float32)
- 
- 
+        val_input, val_labels, val_ts = nq_load(
+            cst.DATA_DIR + "/NQ/val.npy",   cst.LEN_SMOOTH, horizon, seq_size
+        )
+        test_input, test_labels, test_ts = nq_load(
+            cst.DATA_DIR + "/NQ/test.npy",  cst.LEN_SMOOTH, horizon, seq_size
+        )
+
+        train_set = Dataset(train_input, train_labels, seq_size)
+        val_set   = Dataset(val_input,   val_labels,   seq_size)
+        test_set  = Dataset(test_input,  test_labels,  seq_size)
+
+        if config.experiment.is_debug:
+            train_set.length = 1_000
+            val_set.length   = 1_000
+            test_set.length  = 10_000
+
         data_module = DataModule(
             train_set=train_set,
             val_set  =val_set,
             test_set =test_set,
             batch_size=config.dataset.batch_size,
-            num_workers=4
+            test_batch_size=config.dataset.batch_size * 4,
+            num_workers=4,
         )
+
         test_loaders = [data_module.test_dataloader()]
 
      
@@ -264,8 +267,7 @@ def train(config: Config, trainer: L.Trainer, run=None):
                 num_heads=checkpoint["hyper_parameters"]["num_heads"],
                 is_sin_emb=checkpoint["hyper_parameters"]["is_sin_emb"],
                 map_location=cst.DEVICE,
-                len_test_dataloader=len(test_loaders[0]),
-                class_weights=class_weights
+                len_test_dataloader=len(test_loaders[0])
                 )
         elif model_type == "BINCTABL":
             model = Engine.load_from_checkpoint(
@@ -337,8 +339,7 @@ def train(config: Config, trainer: L.Trainer, run=None):
                 dataset_type=dataset_type,
                 num_heads=config.model.hyperparameters_fixed["num_heads"],
                 is_sin_emb=config.model.hyperparameters_fixed["is_sin_emb"],
-                len_test_dataloader=len(test_loaders[0]),
-                class_weights=class_weights
+                len_test_dataloader=len(test_loaders[0])
             )
         elif model_type == cst.ModelType.BINCTABL:
             model = Engine(

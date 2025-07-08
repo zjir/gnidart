@@ -148,8 +148,11 @@ def labeling(X, len, h):
     # Compute percentage change
     percentage_change = (future_mid_prices - previous_mid_prices) / previous_mid_prices
     
+    # koeficient nasobku ticku predvidanych
+    K = 10
+    
     # alpha is the average percentage change of the stock
-    alpha = np.abs(percentage_change).mean() / 2
+    alpha = K * (np.abs(percentage_change).mean() / 2)
     
     # alpha is the average spread of the stock in percentage of the mid-price
     #alpha = (X[:, 0] - X[:, 2]).mean() / ((X[:, 0] + X[:, 2]) / 2).mean()
@@ -159,3 +162,4 @@ def labeling(X, len, h):
     print(f"Number of labels: {np.unique(labels, return_counts=True)}")
     print(f"Percentage of labels: {np.unique(labels, return_counts=True)[1] / labels.shape[0]}")
     return labels
+

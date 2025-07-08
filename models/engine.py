@@ -55,11 +55,11 @@ class Engine(LightningModule):
         self.model = pick_model(model_type, hidden_dim, num_layers, seq_size, num_features, num_heads, is_sin_emb, dataset_type) 
         self.ema = ExponentialMovingAverage(self.parameters(), decay=0.999)
         self.ema.to(cst.DEVICE)
-        #self.loss_function = nn.CrossEntropyLoss()
-        # give rarer class-1 ˜ 60× more weight than class-0
-        self.class_weights = class_weights if class_weights is not None \
-                             else torch.tensor([1.0, 1.0])
-        self.loss_function = nn.CrossEntropyLoss(weight=self.class_weights.to(cst.DEVICE))
+        self.loss_function = nn.CrossEntropyLoss()
+        # give rarer class-1 ï¿½ 60ï¿½ more weight than class-0
+        #self.class_weights = class_weights if class_weights is not None \
+        #                     else torch.tensor([1.0, 1.0,1.0])
+        #self.loss_function = nn.CrossEntropyLoss(weight=self.class_weights.to(cst.DEVICE))
         self.train_losses = []
         self.val_losses = []
         self.test_losses = []
