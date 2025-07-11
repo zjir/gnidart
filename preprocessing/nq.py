@@ -42,9 +42,12 @@ from typing import Iterable, List
 import numpy as np
 import pandas as pd
 import torch
+from datetime import time
 
 import constants as cst
 from constants import SamplingType
+import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
 
 # ---------------------------------------------------------------------------
 # helper: robust timestamp → pandas.Timestamp (UTC)
@@ -122,11 +125,49 @@ class NQDataBuilder:
     # public entry
     # ------------------------------------------------------------------
     def prepare_save_datasets(self):
-        day_dir = self._split_by_day()        # 1 CSV per date
-        self._load_concat_splits(day_dir)     # three big DFs
-        self._append_labels()                 # four horizon cols
-        self._normalize_dataframes()          # z‑score 40 features
+        """
+        Build train / val / test .npy blobs **using only the regular-session
+        rows (15:30 → 22:30 UTC, i.e. 08:30 → 15:30 CT)**.
 
+        Workflow
+        --------
+        1.  _split_by_day()           → raw CSV per date         (unchanged)
+        2.  _load_concat_splits()     → three DataFrames
+                ↳ here we *trim* rows outside 15:30-22:30
+        3.  _append_labels()          → add four horizon cols
+        4.  _normalize_dataframes()   → z-score 40 features
+        5.  save  train / val / test  to  <data_dir>/NQ
+        """
+
+        # ------------------------------------------------------------------
+        # 1-2  load and **in-session filter** ------------------------------
+        # ------------------------------------------------------------------
+        day_dir = self._split_by_day()
+        self._load_concat_splits(day_dir)      # → self.dataframes  (train,val,test)
+
+        SESSION_START = time(15, 30)   # 15:30 UTC  (08:30 CT)
+        SESSION_END   = time(22, 30)   # 22:30 UTC  (15:30 CT)
+
+        for i, df in enumerate(self.dataframes):
+            # ① int64 → datetime64[ns, UTC]
+            ts_utc = pd.to_datetime(df["timestamp"], unit="ms", utc=True)
+
+            # ② boolean mask on time component
+            mask = (ts_utc.dt.time >= SESSION_START) & (ts_utc.dt.time <= SESSION_END)
+            df   = df.loc[mask].reset_index(drop=True)
+
+            # keep timestamp column as int64 ms for the rest of the pipeline
+            self.dataframes[i] = df
+
+        # ------------------------------------------------------------------
+        # 3-4  labels  +  normalise  ---------------------------------------
+        # ------------------------------------------------------------------
+        self._append_labels()
+        self._normalize_dataframes()
+
+        # ------------------------------------------------------------------
+        # 5  save .npy blobs -----------------------------------------------
+        # ------------------------------------------------------------------
         out_dir = self.data_dir / "NQ"
         out_dir.mkdir(parents=True, exist_ok=True)
         np.save(out_dir / "train.npy", self.train_set)
@@ -212,7 +253,9 @@ class NQDataBuilder:
 
         for h in cst.LOBSTER_HORIZONS:  # [10,20,50,100]
             for name, arr_in in zip(("train", "val", "test"), (train_vals, val_vals, test_vals)):
-                labs = NQDataBuilder.labeling_tick(arr_in[:, 1:], cst.LEN_SMOOTH, h, 0.25,4)  # skip ts for features
+                #mid_px = (arr_in[:, 0] + arr_in[:, 2]) / 2.0      # ask_px0 & bid_px0
+                #labs = NQDataBuilder.labeling_tick(arr_in[:0], h, 8, 4, 2500)  # skip ts for features
+                labs = NQDataBuilder.labeling_tick(arr_in[:, 1:], cst.LEN_SMOOTH, h, 2500,6)  # skip ts for features
                 pad  = np.full(arr_in.shape[0] - labs.shape[0], np.inf)
                 labs = np.concatenate([labs, pad])
                 target = getattr(self, f"{name}_labels_horizons", None)
@@ -303,6 +346,7 @@ class NQDataBuilder:
         # diagnostics: ensure every class percentage is printed
         counts = np.bincount(labels, minlength=3)
         pct    = counts / counts.sum()
+        print(f"horizon           : {h}")
         print(f"tick size           : {tick}")
         print(f"alpha (ticks)       : {alpha_ticks}")
         print(f"alpha (points)      : {alpha}")
@@ -312,6 +356,41 @@ class NQDataBuilder:
 
         return labels
     
+    @staticmethod
+    def labeling_tp_sl_clean(
+            px,                 # 1-D mid-price series (points or ticks)
+            horizon,            # rows to look ahead  (e.g. 3 s = 3)
+            tp_ticks=4,         # take-profit threshold in ticks
+            sl_ticks=2,         # stop-loss threshold  in ticks
+            tick_size=0.25):    # NQ tick
+        """
+        Returns a 0/1/2 label for every snapshot except the last <horizon> rows.
+        0 = up-TP hit & never SL, 2 = down-TP hit & never SL, 1 = otherwise.
+        """
+
+        # ── convert to ‘ticks from entry’ ──────────────────────────────────
+        fut = sliding_window_view(px, horizon + 1)      # shape (N, h+1)
+        entry = fut[:, 0:1]                             # (N,1) broadcast
+        diff_ticks = np.round((fut[:, 1:] - entry) / tick_size).astype(int)
+
+        max_diff = diff_ticks.max(axis=1)
+        min_diff = diff_ticks.min(axis=1)
+
+        cond_up   = (max_diff >=  tp_ticks) & (min_diff >  -sl_ticks)
+        cond_down = (min_diff <= -tp_ticks) & (max_diff <   sl_ticks)
+
+        labels = np.full(cond_up.shape, 1, dtype=np.int8)
+        labels[cond_up]   = 0
+        labels[cond_down] = 2
+
+        uniq, cnt = np.unique(labels, return_counts=True)
+        pct = cnt / cnt.sum() * 100
+        print(f"labels for horizon {horizon}:", "  ".join(f"{u}→{c} ({p:.2f}%)"
+                                   for u, c, p in zip(uniq, cnt, pct)))
+        
+        return labels
+
+
     @staticmethod
     def z_score_orderbook(data, mean_size=None, mean_prices=None, std_size=None, std_prices=None):
         """ DONE: remember to use the mean/std of the training set, to z-normalize the test set. """
