@@ -9,6 +9,12 @@ git clone https://github.com/zjir/gnidart.git
 # Step 3: Navigate into the cloned repository
 cd gnidart || exit 1
 
+# Step 7: Create data directory
+mkdir -p data
+
+# Step 8: Update apt and install unzip
+sudo apt-get update && sudo apt-get install -y unzip
+
 # Step 4: Create Python virtual environment
 python3 -m venv tlob-env
 
@@ -19,9 +25,3 @@ source ./tlob-env/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# Step 7: Create data directory
-mkdir -p data
-cd data || exit 1
-
-# Step 8: Update apt and install unzip
-sudo apt-get update && sudo apt-get install -y unzip

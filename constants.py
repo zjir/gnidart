@@ -1,4 +1,5 @@
 import torch
+import platform
 from enum import Enum
 from preprocessing.dataset import Dataset  
 
@@ -64,13 +65,87 @@ LEN_SMOOTH = 1
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-DATA_DIR = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data"
-DIR_EXPERIMENTS = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\experiments"
-DIR_SAVED_MODEL = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data\\checkpoints"
+import torch
+import platform
+from enum import Enum
+from preprocessing.dataset import Dataset  
 
-#DIR_EXPERIMENTS = "/workspace/gnidart/data/experiments"
-#DIR_SAVED_MODEL = "/workspace/gnidart/data/checkpoints"
-#DATA_DIR = "/workspace/gnidart/data"
+class DatasetType(Enum):
+    LOBSTER = "LOBSTER"
+    FI_2010 = "FI_2010"
+    BTC = "BTC"
+    MY_NQ = "MY_NQ"
+    
+
+class ModelType(Enum):
+    MLPLOB = "MLPLOB"
+    TLOB = "TLOB"
+    BINCTABL = "BINCTABL"
+    DEEPLOB = "DEEPLOB"
+    
+class SamplingType(Enum):
+    TIME = "time"
+    QUANTITY = "quantity"
+    NONE = "none"
+
+
+
+# for 15 days of TSLA
+TSLA_LOB_MEAN_SIZE_10 = 165.44670902537212
+TSLA_LOB_STD_SIZE_10 = 481.7127061897184
+TSLA_LOB_MEAN_PRICE_10 = 20180.439318660694
+TSLA_LOB_STD_PRICE_10 = 814.8782058033195
+
+TSLA_EVENT_MEAN_SIZE = 88.09459295373463
+TSLA_EVENT_STD_SIZE = 86.55913199110894
+TSLA_EVENT_MEAN_PRICE = 20178.610720500274
+TSLA_EVENT_STD_PRICE = 813.8188032145645
+TSLA_EVENT_MEAN_TIME = 0.08644932804905886
+TSLA_EVENT_STD_TIME = 0.3512181506722207
+TSLA_EVENT_MEAN_DEPTH = 7.365325300819055
+TSLA_EVENT_STD_DEPTH = 8.59342838063813
+
+# for 15 days of INTC
+INTC_LOB_MEAN_SIZE_10 = 6222.424274871972
+INTC_LOB_STD_SIZE_10 = 7538.341086370264
+INTC_LOB_MEAN_PRICE_10 = 3635.766219937785
+INTC_LOB_STD_PRICE_10 = 44.15649995373795
+
+INTC_EVENT_MEAN_SIZE = 324.6800802006092
+INTC_EVENT_STD_SIZE = 574.5781447696605
+INTC_EVENT_MEAN_PRICE = 3635.78165265669
+INTC_EVENT_STD_PRICE = 43.872407609651184
+INTC_EVENT_MEAN_TIME = 0.025201754040915927
+INTC_EVENT_STD_TIME = 0.11013627432323592
+INTC_EVENT_MEAN_DEPTH = 1.3685517399834501
+INTC_EVENT_STD_DEPTH = 2.333747222206966
+
+
+
+
+LOBSTER_HORIZONS = [8, 10, 12, 16]
+PRECISION = 32
+N_LOB_LEVELS = 10
+LEN_LEVEL = 4
+LEN_ORDER = 6
+LEN_SMOOTH = 1
+
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+if platform.system() == "Windows":
+    DATA_DIR = "c:\\Users\\jiruszde\\OneDrive\\Main\\1.Projects\\My\\Trading\\Jupyter\\2025-tlob\\data"
+    DIR_EXPERIMENTS = DATA_DIR + "\\experiments"
+    DIR_SAVED_MODEL = DATA_DIR + "\\checkpoints"
+else:  # Linux or macOS
+    DATA_DIR = "/workspace/gnidart/data"
+    DIR_EXPERIMENTS = f"{DATA_DIR}/experiments"
+    DIR_SAVED_MODEL = f"{DATA_DIR}/checkpoints"
+
+RECON_DIR = "/workspace/gnidart/data/reconstructions"
+PROJECT_NAME = "EvolutionData"
+SPLIT_RATES = [0.8, 0.1, 0.1]
+WANDB_API = ""
+WANDB_USERNAME = ""
 
 RECON_DIR = "/workspace/gnidart/data/reconstructions"
 PROJECT_NAME = "EvolutionData"

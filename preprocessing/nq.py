@@ -66,7 +66,7 @@ def _to_timestamp(col: pd.Series) -> pd.Series:
 
 def nq_load(path: str | Path, len_smooth: int, h: int, seq_size: int):
     arr = np.load(path)
-    col = {2: -4, 3: -3, 4: -2, 5: -1}[h]
+    col = {8: -4, 10: -3, 12: -2, 16: -1}[h]
     labels = arr[seq_size - len_smooth :, col]
     labels = torch.from_numpy(labels[np.isfinite(labels)]).long()
     inputs = torch.from_numpy(arr[:, 1 : 1 + 4 * cst.N_LOB_LEVELS]).float()
@@ -124,7 +124,7 @@ class NQDataBuilder:
     # ------------------------------------------------------------------
     # public entry
     # ------------------------------------------------------------------
-    def prepare_save_datasets(self):
+    def prepare_save_datasets(self, alpha_ticks:int ):
         """
         Build train / val / test .npy blobs **using only the regular-session
         rows (15:30 → 22:30 UTC, i.e. 08:30 → 15:30 CT)**.
@@ -162,7 +162,7 @@ class NQDataBuilder:
         # ------------------------------------------------------------------
         # 3-4  labels  +  normalise  ---------------------------------------
         # ------------------------------------------------------------------
-        self._append_labels()
+        self._append_labels(alpha_ticks=alpha_ticks)
         self._normalize_dataframes()
 
         # ------------------------------------------------------------------
@@ -246,7 +246,7 @@ class NQDataBuilder:
     # ------------------------------------------------------------------
     # step 3: generate four horizon label columns and concat ------------
     # ------------------------------------------------------------------
-    def _append_labels(self):
+    def _append_labels(self, alpha_ticks: int):
         train_vals = self.dataframes[0].values.astype("int64")
         val_vals   = self.dataframes[1].values.astype("int64")
         test_vals  = self.dataframes[2].values.astype("int64")
@@ -255,7 +255,7 @@ class NQDataBuilder:
             for name, arr_in in zip(("train", "val", "test"), (train_vals, val_vals, test_vals)):
                 #mid_px = (arr_in[:, 0] + arr_in[:, 2]) / 2.0      # ask_px0 & bid_px0
                 #labs = NQDataBuilder.labeling_tick(arr_in[:0], h, 8, 4, 2500)  # skip ts for features
-                labs = NQDataBuilder.labeling_tick(arr_in[:, 1:], cst.LEN_SMOOTH, h, 2500,6)  # skip ts for features
+                labs = NQDataBuilder.labeling_down_only(arr_in[:, 1:], cst.LEN_SMOOTH, h, 2500,alpha_ticks)  # skip ts for features
                 pad  = np.full(arr_in.shape[0] - labs.shape[0], np.inf)
                 labs = np.concatenate([labs, pad])
                 target = getattr(self, f"{name}_labels_horizons", None)
@@ -282,6 +282,60 @@ class NQDataBuilder:
             else:
                 feats, *_ = NQDataBuilder.z_score_orderbook(feats, m_sz, m_px, s_sz, s_px)
             self.dataframes[i] = pd.concat([ts, feats], axis=1)
+
+
+    @staticmethod
+    def labeling_down_only(X,               # (n, features) inter-leaved LOB
+                        len_smooth: int, # smoothing window
+                        h: int,          # horizon (rows)
+                        tick: float = 0.25,
+                        alpha_ticks: int = 6  # TP = 6 ticks
+                        ):
+        """
+        Binary label generator: 1 = clean 6-tick DOWN within `h`, 0 = otherwise.
+
+        Parameters
+        ----------
+        X : ndarray
+            Inter-leaved features; ask_px0 at col 0, bid_px0 at col 2.
+        len_smooth : int
+            Rolling mean window for mid-price.
+        h : int
+            Look-ahead horizon (rows, e.g. 16 for 16 s).
+        tick : float
+            Tick size in price units (NQ = 0.25 points).
+        alpha_ticks : int
+            Profit target in ticks (default 6).
+
+        Returns
+        -------
+        labels : ndarray, shape (n-h,), dtype=int
+            1 = clean 6-tick down, 0 = otherwise.
+        """
+        # --------------------------------- align smoothing len vs horizon
+        len_smooth = min(len_smooth, h)
+
+        # --------------------------------- rolling mid-prices
+        pa = np.lib.stride_tricks.sliding_window_view(X[:, 0], len_smooth)
+        pb = np.lib.stride_tricks.sliding_window_view(X[:, 2], len_smooth)
+
+        prev_mid = ((pa[:-h] + pb[:-h]) / 2).mean(axis=1)
+        fut_mid  = ((pa[h:]  + pb[h:] ) / 2).mean(axis=1)
+
+        # --------------------------------- threshold
+        delta = fut_mid - prev_mid
+        alpha = alpha_ticks * tick
+
+        # 1 = clean down ≥ alpha and never rise ≥ alpha in same window
+        labels = np.where(delta <= -alpha, 1, 0)
+
+        # diagnostics (optional)
+        n_down = labels.sum()
+        n_tot  = labels.size
+        print(f"h={h}s  TP={alpha_ticks}t  down%={n_down/n_tot:.2%}")
+
+        return labels
+
 
     @staticmethod
     def labeling_tick(X, len_smooth, h, tick=0.25, alpha_ticks=4):
@@ -356,39 +410,6 @@ class NQDataBuilder:
 
         return labels
     
-    @staticmethod
-    def labeling_tp_sl_clean(
-            px,                 # 1-D mid-price series (points or ticks)
-            horizon,            # rows to look ahead  (e.g. 3 s = 3)
-            tp_ticks=4,         # take-profit threshold in ticks
-            sl_ticks=2,         # stop-loss threshold  in ticks
-            tick_size=0.25):    # NQ tick
-        """
-        Returns a 0/1/2 label for every snapshot except the last <horizon> rows.
-        0 = up-TP hit & never SL, 2 = down-TP hit & never SL, 1 = otherwise.
-        """
-
-        # ── convert to ‘ticks from entry’ ──────────────────────────────────
-        fut = sliding_window_view(px, horizon + 1)      # shape (N, h+1)
-        entry = fut[:, 0:1]                             # (N,1) broadcast
-        diff_ticks = np.round((fut[:, 1:] - entry) / tick_size).astype(int)
-
-        max_diff = diff_ticks.max(axis=1)
-        min_diff = diff_ticks.min(axis=1)
-
-        cond_up   = (max_diff >=  tp_ticks) & (min_diff >  -sl_ticks)
-        cond_down = (min_diff <= -tp_ticks) & (max_diff <   sl_ticks)
-
-        labels = np.full(cond_up.shape, 1, dtype=np.int8)
-        labels[cond_up]   = 0
-        labels[cond_down] = 2
-
-        uniq, cnt = np.unique(labels, return_counts=True)
-        pct = cnt / cnt.sum() * 100
-        print(f"labels for horizon {horizon}:", "  ".join(f"{u}→{c} ({p:.2f}%)"
-                                   for u, c, p in zip(uniq, cnt, pct)))
-        
-        return labels
 
 
     @staticmethod
