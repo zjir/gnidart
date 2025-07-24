@@ -65,6 +65,8 @@ def _to_timestamp(col: pd.Series) -> pd.Series:
 # ---------------------------------------------------------------------------
 
 def nq_load(path: str | Path, len_smooth: int, h: int, seq_size: int):
+    #hardwired - data jsou takhle udelana
+    len_smooth = 1 
     arr = np.load(path)
     col = {8: -4, 10: -3, 12: -2, 16: -1}[h]
     labels = arr[seq_size - len_smooth :, col]
@@ -124,7 +126,7 @@ class NQDataBuilder:
     # ------------------------------------------------------------------
     # public entry
     # ------------------------------------------------------------------
-    def prepare_save_datasets(self, alpha_ticks:int ):
+    def prepare_save_datasets(self, alpha_ticks:int, horizons: list[int] ):
         """
         Build train / val / test .npy blobs **using only the regular-session
         rows (15:30 → 22:30 UTC, i.e. 08:30 → 15:30 CT)**.
@@ -162,7 +164,7 @@ class NQDataBuilder:
         # ------------------------------------------------------------------
         # 3-4  labels  +  normalise  ---------------------------------------
         # ------------------------------------------------------------------
-        self._append_labels(alpha_ticks=alpha_ticks)
+        self._append_labels(alpha_ticks=alpha_ticks, horizons=horizons)
         self._normalize_dataframes()
 
         # ------------------------------------------------------------------
@@ -246,16 +248,16 @@ class NQDataBuilder:
     # ------------------------------------------------------------------
     # step 3: generate four horizon label columns and concat ------------
     # ------------------------------------------------------------------
-    def _append_labels(self, alpha_ticks: int):
+    def _append_labels(self, alpha_ticks: int, horizons: list[int]):
         train_vals = self.dataframes[0].values.astype("int64")
         val_vals   = self.dataframes[1].values.astype("int64")
         test_vals  = self.dataframes[2].values.astype("int64")
 
-        for h in cst.LOBSTER_HORIZONS:  # [10,20,50,100]
+        for h in horizons: 
             for name, arr_in in zip(("train", "val", "test"), (train_vals, val_vals, test_vals)):
                 #mid_px = (arr_in[:, 0] + arr_in[:, 2]) / 2.0      # ask_px0 & bid_px0
                 #labs = NQDataBuilder.labeling_tick(arr_in[:0], h, 8, 4, 2500)  # skip ts for features
-                labs = NQDataBuilder.labeling_down_only(arr_in[:, 1:], cst.LEN_SMOOTH, h, 2500,alpha_ticks)  # skip ts for features
+                labs = NQDataBuilder.labeling_down_only(arr_in[:, 1:], 1, h, 2500,alpha_ticks)  # skip ts for features
                 pad  = np.full(arr_in.shape[0] - labs.shape[0], np.inf)
                 labs = np.concatenate([labs, pad])
                 target = getattr(self, f"{name}_labels_horizons", None)
@@ -313,7 +315,7 @@ class NQDataBuilder:
             1 = clean 6-tick down, 0 = otherwise.
         """
         # --------------------------------- align smoothing len vs horizon
-        len_smooth = min(len_smooth, h)
+        len_smooth = 1 #min(len_smooth, h)
 
         # --------------------------------- rolling mid-prices
         pa = np.lib.stride_tricks.sliding_window_view(X[:, 0], len_smooth)

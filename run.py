@@ -39,7 +39,7 @@ def run(config: Config, accelerator):
         precision=cst.PRECISION,
         max_epochs=config.experiment.max_epochs,
         callbacks=[
-            EarlyStopping(monitor="val_loss", mode="min", patience=5, verbose=True, min_delta=0.0),
+            EarlyStopping(monitor="val_loss", mode="min", patience=60, verbose=True, min_delta=1e-4),
             TQDMProgressBar(refresh_rate=100)
             ],
         num_sanity_val_steps=0,
