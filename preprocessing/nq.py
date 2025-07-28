@@ -68,7 +68,7 @@ def nq_load(path: str | Path, len_smooth: int, h: int, seq_size: int):
     #hardwired - data jsou takhle udelana
     len_smooth = 1 
     arr = np.load(path)
-    col = {8: -4, 10: -3, 12: -2, 16: -1}[h]
+    col = {4: -4, 6: -3, 9: -2, 30: -1}[h]
     labels = arr[seq_size - len_smooth :, col]
     labels = torch.from_numpy(labels[np.isfinite(labels)]).long()
     inputs = torch.from_numpy(arr[:, 1 : 1 + 4 * cst.N_LOB_LEVELS]).float()

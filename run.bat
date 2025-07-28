@@ -1,1 +1,1 @@
-python main.py model=tlob dataset=my_nq experiment.max_epochs=1 experiment.horizon=16 experiment.is_wandb=false experiment.is_debug=true
+python main.py model=tlob dataset=my_nq experiment.max_epochs=1 experiment.horizon=9 experiment.is_wandb=false experiment.is_debug=true
